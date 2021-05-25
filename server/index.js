@@ -5,6 +5,7 @@ const app = express();
 const cors = require('cors')
 const pool = require("./db")
 const { sendConfirmationEmail } = require('./mailer');
+const { sendPasswordResetEmail } = require('./password-reset-mailer');
 
 //middleware
 app.use(cors());
@@ -37,10 +38,36 @@ app.post("/register", async (req, res) => {
     }
 })
 
+app.post("/reset-password/", async (req, res) => { 
+    try {
+        const { email } = req.body;
+ 
+        const existingUsers = await fetch(`http://localhost:5000/email/${email}`);
+        const jsonExistingUsers = await existingUsers.json();
+        const user = await jsonExistingUsers[0]     
+        await sendPasswordResetEmail({toUser: user, id: user.id});
+        
+    } catch (error) {
+        console.error(error.message);
+    }
+})
+
 app.get("/data", async (req, res) => {
     try {
         const allUsers = await pool.query("SELECT * FROM register");
         res.json(allUsers.rows);
+    } catch (error) {
+        console.error(error.message);
+    }
+})
+
+app.get('/email/:email', async (req, res) => {
+    const { email } = req.params;
+    try {
+        const allUsers = await pool.query("SELECT * FROM register WHERE email=$1", [email]);
+        res.json(allUsers.rows);
+
+        
     } catch (error) {
         console.error(error.message);
     }
@@ -76,19 +103,19 @@ app.get('/api/activate/user/:hash', async (req, res) => {
 
         const rUser = await jsonExistingUsers.find(user => user.id === hash);
 
-      res.json({message: `User ${hash} has been activated`})
+        res.json({message: `User ${hash} has been activated`})
     } catch {
       res.status(422).send('User cannot be activated!');
     }
   })
 
-//update a todo
+//reset password
 
-/*app.put("/todos/:id", async (req, res) => {
+app.put("/reset-password/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const { description } = req.body;
-        const UpdateTodo = await pool.query("UPDATE todo SET description = $1 WHERE todo_id = $2", [description, id]);
+        const { password } = req.body;
+        const updatePassword = await pool.query("UPDATE register SET password = $1  WHERE id = $2", [password, id]);
         res.json("Todo was updated!");
     } catch (error) {
         console.error(error.message);
@@ -97,7 +124,7 @@ app.get('/api/activate/user/:hash', async (req, res) => {
 
 //delete a todo
 
-app.delete("/todos/:id", async (req, res) => {
+/*app.delete("/todos/:id", async (req, res) => {
     try {
         const { id } = req.params;
         const deleteTodo = await pool.query("DELETE FROM todo WHERE todo_id = $1", [id]);

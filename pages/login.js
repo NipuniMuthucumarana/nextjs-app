@@ -65,7 +65,7 @@ const Login = () => {
 
                 <Button type='submit' onClick={(e)=>onLogin(e)} color='primary' variant="contained" style={btnstyle} fullWidth>Sign in</Button>
                 <Typography >
-                    <Link href="#" >
+                    <Link href="/reset-password/" >
                         Forgot password ?
                     </Link>
                 </Typography>
